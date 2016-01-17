@@ -1,67 +1,150 @@
 <!DOCTYPE html>
 <?php
 // Start YOURLS engine
-require_once( dirname(__FILE__) . '/includes/load-yourls.php' );
+require_once( dirname(__FILE__).'/includes/load-yourls.php' );
 
 // Ask for Infinity Squared settings
-if( @include dirname(__FILE__) . '/public/config.php' ) {
-	include( dirname(__FILE__) . '/public/config.php' );
-} else {
-	include( dirname(__FILE__) . '/public/config-sample.php' );
-}
-
+include( dirname(__FILE__).'/public/config.php' );
 class ISQ { public static $general = array(), $links = array(), $social = array(), $recaptcha = array(); }
 
 // Load translations
-yourls_load_custom_textdomain( 'isq_translation', '/public/languages' );
+function isq_load_textdomain() {
+    yourls_load_custom_textdomain( 'isq_translation', $site . '/public/languages' );
+    $site = YOURLS_SITE;
+}
+isq_load_textdomain();
+
+// Load reCAPTCHA
+require_once( dirname(__FILE__).'/public/recaptchalib.php');
 ?>
 
 <html>
-	<head>
-		<title><?php echo ISQ::$general['name']; ?></title> <!-- Site title defined in theme settings -->
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<link href="//fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet" type="text/css">
-		<link rel="stylesheet" href="<?php echo YOURLS_SITE; ?>/public/style.css" /><!-- Theme CSS -->
-		<?php if ( ISQ::$general['customstyle'] ) { ?>
-			<link rel="stylesheet" href="<?php echo YOURLS_SITE; ?>/public/custom.css" /><!-- Custom CSS -->
-		<?php } ?>
+<head>
+<title><?php echo ISQ::$general['name']; ?></title> <!-- Site title defined in theme settings -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<link rel="shortcut icon" href="<?php echo YOURLS_SITE; ?>/images/favicon.gif" /> <!-- Default favicon -->
 
-		<!-- App icons generated using http://realfavicongenerator.net -->
-		<link rel="apple-touch-icon" sizes="57x57" href="public/images/app-icons/apple-touch-icon-57x57.png">
-		<link rel="apple-touch-icon" sizes="60x60" href="public/images/app-icons/apple-touch-icon-60x60.png">
-		<link rel="apple-touch-icon" sizes="72x72" href="public/images/app-icons/apple-touch-icon-72x72.png">
-		<link rel="apple-touch-icon" sizes="76x76" href="public/images/app-icons/apple-touch-icon-76x76.png">
-		<link rel="apple-touch-icon" sizes="114x114" href="public/images/app-icons/apple-touch-icon-114x114.png">
-		<link rel="apple-touch-icon" sizes="120x120" href="public/images/app-icons/apple-touch-icon-120x120.png">
-		<link rel="apple-touch-icon" sizes="144x144" href="public/images/app-icons/apple-touch-icon-144x144.png">
-		<link rel="apple-touch-icon" sizes="152x152" href="public/images/app-icons/apple-touch-icon-152x152.png">
-		<link rel="apple-touch-icon" sizes="180x180" href="public/images/app-icons/apple-touch-icon-180x180.png">
-		<link rel="icon" type="image/png" href="public/images/app-icons/favicon-32x32.png" sizes="32x32">
-		<link rel="icon" type="image/png" href="public/images/app-icons/android-chrome-192x192.png" sizes="192x192">
-		<link rel="icon" type="image/png" href="public/images/app-icons/favicon-96x96.png" sizes="96x96">
-		<link rel="icon" type="image/png" href="public/images/app-icons/favicon-16x16.png" sizes="16x16">
-		<link rel="manifest" href="public/images/app-icons/manifest.json">
-		<link rel="shortcut icon" href="public/images/app-icons/favicon.ico">
-		<meta name="msapplication-TileColor" content="#2b5797">
-		<meta name="msapplication-TileImage" content="public/images/app-icons/mstile-144x144.png">
-		<meta name="msapplication-config" content="public/images/app-icons/browserconfig.xml">
-		<meta name="theme-color" content="#013f6d">
-	</head>
+<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Ubuntu:regular,italic,bold,bolditalic"><!-- Ubuntu from Google Web Fonts -->
+<link rel="stylesheet" href="<?php echo YOURLS_SITE; ?>/public/style.css" /><!-- Theme CSS -->
 
-	<body class="load">
+<link rel="stylesheet" href="<?php echo YOURLS_SITE; ?>/public/bootstrap.min.css" />
 
-		<div class="wrapper">
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
 
-			<header class="content site-header">
-				<a href="<?php echo YOURLS_SITE; ?>" class="site-title">
-					<h1><?php echo ISQ::$general['name']; ?></h1>
-				</a>
-				<nav class="menu">
-					<?php
-						foreach( ISQ::$links as $menuItem ) {
-							echo '<a href="' . $menuItem['link'] . '">' . $menuItem['name'] . '</a>';
-						};
-					?>
-				</nav>
-			</header>
+<?php if (!empty(ISQ::$social['plus'])) { ?>
+<script type="text/javascript" src="https://apis.google.com/js/plusone.js">
+  {lang: "en-GB"}
+</script>
+<?php } ?>
+<script type="text/javascript"><!-- reCAPTCHA -->
+var RecaptchaOptions = {
+	theme : 'white'
+};
+</script>
+<?php if (!empty(ISQ::$general['clipboard'])) { ?>
+<script type="text/javascript" src="js/jquery.zclip.min.js"></script>
+<script>
+$(document).ready(function(){
+    $('button#long-copy').zclip({
+        path:'js/ZeroClipboard.swf',
+        copy:function(){return $('input#long-copy').val();},
+        afterCopy: function() {
+        	$("button#long-copy").html('<?php yourls_e( 'Copied!', 'isq_translation'); ?>');
+        }
+    });
+    $('button#short-copy').zclip({
+        path:'js/ZeroClipboard.swf',
+        copy:function(){return $('input#short-copy').val();},
+        afterCopy: function() {
+        	$("button#short-copy").html('<?php yourls_e( 'Copied!', 'isq_translation'); ?>');
+        }
+    });
+    $('button#stats-copy').zclip({
+        path:'js/ZeroClipboard.swf',
+        copy:function(){return $('input#stats-copy').val();},
+        afterCopy: function() {
+        	$("button#stats-copy").html('<?php yourls_e( 'Copied!', 'isq_translation'); ?>');
+        }
+    });
+});
+</script>
+<?php } ?>
+</head>
+
+<body>
+
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+    <!-- Brand and toggle get grouped for better mobile display -->
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="<?php echo YOURLS_SITE; ?>"><?php echo ISQ::$general['name']; ?></a>
+    </div>
+
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <ul class="nav navbar-nav">
+	  
+	<?php  
+	if (ISQ::$links['url_1']) {
+	?>
+	<li><a href="<?php echo ISQ::$links['url_1']; ?>"><?php echo ISQ::$links['name_1']; ?></a></li>
+	<?php } ?>
+	<?php  
+	if (ISQ::$links['url_2']) {
+	?>
+	<li><a href="<?php echo ISQ::$links['url_2']; ?>"><?php echo ISQ::$links['name_2']; ?></a></li>
+	<?php } ?>
+	<?php  
+	if (ISQ::$links['url_3']) {
+	?>
+	<li><a href="<?php echo ISQ::$links['url_3']; ?>"><?php echo ISQ::$links['name_3']; ?></a></li>
+	<?php } ?>
+	<?php  
+	if (ISQ::$links['url_4']) {
+	?>
+	<li><a href="<?php echo ISQ::$links['url_4']; ?>"><?php echo ISQ::$links['name_4']; ?></a></li>
+	<?php } ?>
+	<?php  
+	if (ISQ::$links['url_5']) {
+	?>
+	<li><a href="<?php echo ISQ::$links['url_5']; ?>"><?php echo ISQ::$links['name_5']; ?></a></li>
+	<?php } ?>
+	<?php  
+	if (ISQ::$links['url_6']) {
+	?>
+	<li><a href="<?php echo ISQ::$links['url_6']; ?>"><?php echo ISQ::$links['name_6']; ?></a></li>
+	<?php } ?>
+	<?php  
+	if (ISQ::$links['url_7']) {
+	?>
+	<li><a href="<?php echo ISQ::$links['url_7']; ?>"><?php echo ISQ::$links['name_7']; ?></a></li>
+	<?php } ?>
+	<?php  
+	if (ISQ::$links['url_8']) {
+	?>
+	<li><a href="<?php echo ISQ::$links['url_8']; ?>"><?php echo ISQ::$links['name_8']; ?></a></li>
+	<?php } ?>
+	<?php  
+	if (ISQ::$links['url_9']) {
+	?>
+	<li><a href="<?php echo ISQ::$links['url_9']; ?>"><?php echo ISQ::$links['name_9']; ?></a></li>
+	<?php } ?>
+	<?php  
+	if (ISQ::$links['url_10']) {
+	?>
+	<li><a href="<?php echo ISQ::$links['url_10']; ?>"><?php echo ISQ::$links['name_10']; ?></a></li>
+	<?php } ?>
+      </ul>
+    </div><!-- /.navbar-collapse -->
+  </div><!-- /.container-fluid -->
+</nav>
+
+<div class="paragraph">
